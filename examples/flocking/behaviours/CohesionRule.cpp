@@ -9,5 +9,19 @@ Vector2f CohesionRule::computeForce(const std::vector<Boid*>& neighborhood, Boid
 
   // find center of mass
 
-  return cohesionForce;
+  for (size_t i = 0; i < neighborhood.size(); i++) 
+  {
+      if (neighborhood[i] != boid)
+      {
+          cohesionForce += neighborhood[i]->getPosition();
+      }
+  }
+  if (neighborhood.size() > 0)
+  {
+        cohesionForce /= neighborhood.size();
+        cohesionForce -= boid->getPosition();
+        return cohesionForce.normalized();
+  }
+
+  return Vector2f::zero();
 }
