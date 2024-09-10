@@ -6,6 +6,6 @@ void JohnConway::Step(World& world) {
 }
 
 int JohnConway::CountNeighbors(World& world, Point2D point) {
-  // todo: implement
+  
   return 0;
 }
