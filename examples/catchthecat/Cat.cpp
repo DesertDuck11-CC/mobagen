@@ -3,8 +3,16 @@
 #include <stdexcept>
 
 Point2D Cat::Move(World* world) {
+
+  std::vector<Point2D> path = generatePath(world);
+  if (path.size() > 0)
+  {
+      return path.front();
+  }
+
   auto rand = Random::Range(0, 5);
   auto pos = world->getCat();
+
   switch (rand) {
     case 0:
       return World::NE(pos);
