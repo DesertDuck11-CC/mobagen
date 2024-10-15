@@ -6,7 +6,7 @@
 
 using namespace std;
 
-std::vector<Point2D> getVisitableNeighbours(const World* w, const Point2D& current, const unordered_map<Point2D, bool>& visited);
+std::vector<Point2D> getVisitableNeighbours(World* w, const Point2D& current, const unordered_map<Point2D, bool>& visited);
 
 int heuristics(Point2D goal, Point2D neighbour);
 
@@ -17,7 +17,7 @@ std::vector<Point2D> Agent::generatePath(World* w) {
   unordered_set<Point2D> frontierSet;        // OPTIMIZATION to check faster if a point is in the queue
   unordered_map<Point2D, bool> visited;      // use .at() to get data, if the element dont exist [] will give you wrong results
 
-  //unordered_map<Point2D, int> costSoFar;
+  unordered_map<Point2D, int> costSoFar;
 
   // bootstrap state
   auto catPos = w->getCat();
@@ -40,8 +40,14 @@ std::vector<Point2D> Agent::generatePath(World* w) {
 
       //auto currentPair = frontier.top();
       Point2D current = frontier.front();
-      //frontier.pop();
+      frontier.pop();
       frontierSet.erase(current);
+
+      visited[current] = true;
+
+      std::vector<Point2D> neighbours = getVisitableNeighbours(w, current, visited);
+
+
 
       if (w->catWinsOnSpace(current))
       {
@@ -49,20 +55,16 @@ std::vector<Point2D> Agent::generatePath(World* w) {
           break;
       }
 
-      visited[current] = true;
-
-      std::vector<Point2D> neighbours = getVisitableNeighbours(w, current, visited);
-
       for (size_t i = 0; i < neighbours.size(); i++) 
       {
-          //int newCost = costSoFar[current];
+          //int newCost = costSoFar[current] + 1;
 
           //if (costSoFar.find(neighbours[i]) == costSoFar.end() || newCost < costSoFar[neighbours[i]])
           if (cameFrom.find(neighbours[i]) == cameFrom.end())
           {
               //costSoFar[neighbours[i]] = newCost + 1;
               //int priority = newCost + heuristics(borderExit, neighbours[i]);
-              frontier.push(neighbours[i]);
+              frontier.emplace(neighbours[i]);
               frontierSet.insert(neighbours[i]);
               cameFrom[neighbours[i]] = current;
           }
@@ -77,19 +79,31 @@ std::vector<Point2D> Agent::generatePath(World* w) {
           path.push_back(at);
       }
       path.push_back(catPos);
-      std::reverse(path.begin(), path.end());
+
+      return path;
   }
 
   // if the border is not infinity, build the path from border to the cat using the camefrom map
   // if there isnt a reachable border, just return empty vector
   // if your vector is filled from the border to the cat, the first element is the catcher move, and the last element is the cat move
-  return path;
+  return vector<Point2D>();
 }
 
 std::vector<Point2D> getVisitableNeighbours(World* w, const Point2D& current, const unordered_map<Point2D, bool>& visited) {
-    std::vector<Point2D> neighbours;
+    std::vector<Point2D> neighbours, temp;
     
-    if (w->catCanMoveToPosition(w->E(current)) && visited.find(w->E(current)) == visited.end())
+    temp = w->neighbors(current);
+
+    for (size_t i = 0; i < temp.size(); i++) 
+    {
+        Point2D neighbour = temp[i];
+        if (w->isValidPosition(neighbour) && !w->getContent(neighbour) && visited.find(neighbour) == visited.end())
+        {
+           neighbours.push_back(neighbour);
+        }
+    }
+    
+    /* if (w->catCanMoveToPosition(w->E(current)) && visited.find(w->E(current)) == visited.end())
     {
         neighbours.push_back(w->E(current));
     }
@@ -112,7 +126,7 @@ std::vector<Point2D> getVisitableNeighbours(World* w, const Point2D& current, co
     if (w->catCanMoveToPosition(w->SW(current)) && visited.find(w->SW(current)) == visited.end()) 
     {
         neighbours.push_back(w->SW(current));
-    }
+    }*/
     
     return neighbours;
 }

@@ -2,6 +2,12 @@
 #include "World.h"
 
 Point2D Catcher::Move(World* world) {
+  std::vector<Point2D> path = generatePath(world);
+  if (path.size() > 0) 
+  {  
+      return path.front();
+  }
+
   auto side = world->getWorldSideSize() / 2;
   for (;;) {
     Point2D p = {Random::Range(-side, side), Random::Range(-side, side)};

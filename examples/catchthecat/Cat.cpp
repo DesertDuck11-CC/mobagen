@@ -5,10 +5,14 @@
 Point2D Cat::Move(World* world) {
 
   std::vector<Point2D> path = generatePath(world);
+
+  std::cout << path.size();
+
   if (path.size() > 0)
   {
-      return path.front();
+      return path.back();
   }
+
 
   auto rand = Random::Range(0, 5);
   auto pos = world->getCat();
