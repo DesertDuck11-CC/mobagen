@@ -8,12 +8,20 @@ using namespace std;
 
 std::vector<Point2D> getVisitableNeighbours(World* w, const Point2D& current, const unordered_map<Point2D, bool>& visited);
 
-int heuristics(Point2D goal, Point2D neighbour);
+int heuristics(int goal, Point2D neighbour);
+
+bool operator<(const Point2D& lhs, const Point2D& rhs) {
+  return (lhs.x < rhs.x) || (lhs.x == rhs.x && lhs.y < rhs.y);
+}
+
+// Define operator> outside the struct
+bool operator>(const Point2D& lhs, const Point2D& rhs) {
+  return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
+}
 
 std::vector<Point2D> Agent::generatePath(World* w) {
   unordered_map<Point2D, Point2D> cameFrom;  // to build the flowfield and build the path
-  queue<Point2D> frontier;     // to store next ones to visit
-  //priority_queue<std::pair<int, Point2D>, std::vector<std::pair<int, Point2D>>, std::greater<std::pair<int, Point2D>>> frontier;
+  priority_queue<std::pair<int, Point2D>, std::vector<std::pair<int, Point2D>>, std::greater<std::pair<int, Point2D>>> frontier;     // to store next ones to visit
   unordered_set<Point2D> frontierSet;        // OPTIMIZATION to check faster if a point is in the queue
   unordered_map<Point2D, bool> visited;      // use .at() to get data, if the element dont exist [] will give you wrong results
 
@@ -21,9 +29,9 @@ std::vector<Point2D> Agent::generatePath(World* w) {
 
   // bootstrap state
   auto catPos = w->getCat();
-  frontier.push(catPos);
+  frontier.emplace(0, catPos);
   frontierSet.insert(catPos);
-  //costSoFar[catPos] = 0;
+  costSoFar[catPos] = 0;
   visited[catPos] = true;
 
   Point2D borderExit = Point2D::INFINITE;  // if at the end of the loop we dont find a border, we have to return random points
@@ -38,8 +46,8 @@ std::vector<Point2D> Agent::generatePath(World* w) {
     // enqueue the neighbors to frontier and frontierset
     // do this up to find a visitable border and break the loop
 
-      //auto currentPair = frontier.top();
-      Point2D current = frontier.front();
+      auto currentPair = frontier.top();
+      Point2D current = currentPair.second;
       frontier.pop();
       frontierSet.erase(current);
 
@@ -57,14 +65,13 @@ std::vector<Point2D> Agent::generatePath(World* w) {
 
       for (size_t i = 0; i < neighbours.size(); i++) 
       {
-          //int newCost = costSoFar[current] + 1;
+          int newCost = costSoFar[current] + 1;
 
-          //if (costSoFar.find(neighbours[i]) == costSoFar.end() || newCost < costSoFar[neighbours[i]])
-          if (cameFrom.find(neighbours[i]) == cameFrom.end())
+          if (costSoFar.find(neighbours[i]) == costSoFar.end() || newCost < costSoFar[neighbours[i]])
           {
-              //costSoFar[neighbours[i]] = newCost + 1;
-              //int priority = newCost + heuristics(borderExit, neighbours[i]);
-              frontier.emplace(neighbours[i]);
+              costSoFar[neighbours[i]] = newCost + 1;
+              int priority = newCost + heuristics(w->getWorldSideSize() / 2, neighbours[i]);
+              frontier.emplace(priority, neighbours[i]);
               frontierSet.insert(neighbours[i]);
               cameFrom[neighbours[i]] = current;
           }
@@ -77,8 +84,8 @@ std::vector<Point2D> Agent::generatePath(World* w) {
       for (Point2D at = borderExit; at != catPos; at = cameFrom[at]) 
       {
           path.push_back(at);
+          std::cout << at.x << " " << at.y << std::endl;
       }
-      path.push_back(catPos);
 
       return path;
   }
@@ -94,44 +101,30 @@ std::vector<Point2D> getVisitableNeighbours(World* w, const Point2D& current, co
     
     temp = w->neighbors(current);
 
-    for (size_t i = 0; i < temp.size(); i++) 
-    {
-        Point2D neighbour = temp[i];
-        if (w->isValidPosition(neighbour) && !w->getContent(neighbour) && visited.find(neighbour) == visited.end())
-        {
-           neighbours.push_back(neighbour);
-        }
+    for (size_t i = 0; i < temp.size(); i++) {
+      Point2D neighbour = temp[i];
+      if (w->isValidPosition(neighbour) && !w->getContent(neighbour) && visited.find(neighbour) == visited.end())
+      {
+        neighbours.push_back(neighbour);
+      }
     }
-    
-    /* if (w->catCanMoveToPosition(w->E(current)) && visited.find(w->E(current)) == visited.end())
-    {
-        neighbours.push_back(w->E(current));
-    }
-    if (w->catCanMoveToPosition(w->W(current)) && visited.find(w->W(current)) == visited.end()) 
-    {
-        neighbours.push_back(w->W(current));
-    }
-    if (w->catCanMoveToPosition(w->NE(current)) && visited.find(w->NE(current)) == visited.end()) 
-    {
-        neighbours.push_back(w->NE(current));
-    }
-    if (w->catCanMoveToPosition(w->NW(current)) && visited.find(w->NW(current)) == visited.end()) 
-    {
-        neighbours.push_back(w->NW(current));
-    }
-    if (w->catCanMoveToPosition(w->SE(current)) && visited.find(w->SE(current)) == visited.end()) 
-    {
-        neighbours.push_back(w->SE(current));
-    }
-    if (w->catCanMoveToPosition(w->SW(current)) && visited.find(w->SW(current)) == visited.end()) 
-    {
-        neighbours.push_back(w->SW(current));
-    }*/
     
     return neighbours;
 }
 
-int heuristics(Point2D goal, Point2D neighbour)
-{ 
-    return abs(goal.x - neighbour.x) + abs(goal.y - neighbour.y);
+int heuristics(int goal, Point2D neighbour)
+{
+  if (neighbour.y - neighbour.x <= 0 && neighbour.y + neighbour.x >= 0) {
+    return goal - neighbour.x;
+  }
+  if (neighbour.x - neighbour.y < 0 && neighbour.x + neighbour.y > 0) {
+    return goal - neighbour.y;
+  }
+  if (neighbour.x - neighbour.y <= 0 && neighbour.x + neighbour.y <= 0) {
+    return goal - abs(neighbour.x);
+  }
+  if (neighbour.x - neighbour.y > 0 && neighbour.x + neighbour.y < 0) {
+    return goal - abs(neighbour.y);
+  }
+  return goal;
 }

@@ -3,8 +3,8 @@
 
 Point2D Catcher::Move(World* world) {
   std::vector<Point2D> path = generatePath(world);
-  if (path.size() > 0) 
-  {  
+  if (path.size() > 0)
+  {
       return path.front();
   }
 
