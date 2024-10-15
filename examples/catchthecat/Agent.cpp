@@ -14,7 +14,6 @@ bool operator<(const Point2D& lhs, const Point2D& rhs) {
   return (lhs.x < rhs.x) || (lhs.x == rhs.x && lhs.y < rhs.y);
 }
 
-// Define operator> outside the struct
 bool operator>(const Point2D& lhs, const Point2D& rhs) {
   return (lhs.x > rhs.x) || (lhs.x == rhs.x && lhs.y > rhs.y);
 }
